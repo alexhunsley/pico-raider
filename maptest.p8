@@ -98,14 +98,20 @@ function drawplayer()
  spr(5,px,py,1,2)
 end
 
+function _init()
+ setuptestmap()
+end
+
 function _update()
 
 end
 
-setuptestmap()
-drawmap(m3)
-drawstatus()
-drawplayer()
+function _draw()
+ drawmap(m3)
+ drawstatus()
+ drawplayer()
+end
+
 
 __gfx__
 088808801d1111118444458800000000000083300007700000000000000000000000000000000000000000000000000000000000000000000000000000000000

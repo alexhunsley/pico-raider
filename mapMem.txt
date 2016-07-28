@@ -1,0 +1,97 @@
+map:
+128x32
+
+                                 128
+A-------------+E--------------------------------------------------------+
+|             |F                        112                             |
+|          R_MapData_a                                                  |
+|    16x15    |           Area = 112x15 = 1680 (0x690)                  |
+| Area = 240  |           R_WorkingArea                                 |
+| R_WorkingMap|                                                         |
+B-------------+  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -|
+G                                                                       |
+|                                                                       | 
+|                                                                       |  32
+|                              Area = 2176                              |
+|17                                                                     |
+|                                                                       |
+|                                                                       |
+|                                                    ^                  |
+|                                                    |                  |
+|                                               R_MapData_B             |
++----------------------------------------------      |      ------------+
+C                                128                 v                  |
+|                                                                       |
+|                                                                       |
+|                         Area = 4096                                   |
+|                                                                       |
+|                                                                       |  32
+|                                                                       |
+|                                                                       |
+|                                                                       |
+|                                                                       |
+------------------------------------------------------------------------D
+
+
+A = R_MapData_a = 0x1000 (i.e. the shared sprite/map section)
+B = A + 128*14 = 0x1700
+C = 0x2000 (i.e. start of map section)
+D = 0x2fff
+E = 0x1010
+F = 0x1090
+G = 0x1780
+R_MapData_A = 0x4300 to 0x4a79)
+
+user space: 0x4300, 11 pages
+
+At startup, copy R_MapData_a to R_MapData_A: the contiguous mem from 0x4300 to 0x4a80.
+Then we use R_WorkingMap for building current map screen, and R_WorkingArea for some user data.
+
+Note that after above setup, we end up with two cotiguous areas for compressed map data: R_MapData_A and _B.
+
+Map Chunk and Screen Chunk
+Each map chunk represents a single screen in compressed format and contains one or more screen chunks, which represent a rectangular region on the screen filled with a certain sprite or empty tile.
+
+Map chunk format:
+1 byte giving the screen number. 
+1 or more:
+  EITHER: // map chunk
+    1 byte X/Y address, X low, Y hi (can't have X=15)
+    1 byte W/H minus 1 (0 is width=1)
+    1 bytes sprite number
+  OR:     // control code
+    1 byte with b & 1111AAAA == 1111AAAA (i.e. Y=15)
+    switch A:
+     0:
+       1 byte for screen number to LEFT of this screen
+     1:
+       1 byte for screen number to RIGHT of this screen
+     2:
+       1 byte for screen number to TOP of this screen
+     3:
+       1 byte for screen number to BOTTOM of this screen
+     4:  // mobile enemy 
+       1 byte X/Y address, X low, Y hi (can't have X=15)
+       1 byte X speed/Y speed
+       1 byte sprite number
+     15: 
+       SIGNALS END OF MAP CHUNK
+
+
+
+Note: by default, moving off the edge of a screen changes the screen number thus:
+left: -1
+right: +1
+up: -16
+down: +16
+A screen can override this by specifying a custom target screen (ctrl codes 0-3) for given direction(s). This allows us to have a more interesting map than a square block shape.
+
+
+
+
+
+
+
+total mem for map storage = 4096*2 - 240 = 7952.
+
+entire area is 128x32
