@@ -45,7 +45,7 @@ function createstars()
   star={}
   star.x=rnd(128)
   star.y=rnd(80)
-  star.dx=(1+rnd(3))/4
+  star.dx=0.5
   add(stars,star)
  end
 end
