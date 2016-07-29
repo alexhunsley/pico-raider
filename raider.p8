@@ -2,7 +2,8 @@ pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
 baddies={}
-
+stars={}
+numstars=10
 
 level=120
 flatmode=1
@@ -39,8 +40,26 @@ levels={}
 -- height on-screen
 levelsidx=1
 
+function createstars()
+ for i=1,numstars do
+  star={}
+  star.x=rnd(128)
+  star.y=rnd(80)
+  star.dx=(1+rnd(3))/4
+  add(stars,star)
+ end
+end
+
+function updatestar(star)
+ star.x-=star.dx
+ if (star.x<0) then
+  star.x+=128
+ end
+end
+
 function _init()
  srand(314)
+ createstars()
  for i=1,128 do
   if i%4 > 1 then
    levels[i]=120
@@ -111,15 +130,16 @@ end
 
 function updatebaddy(baddy)
  baddy.x-=1
- --if baddy.x<-8 then
- -- remove(baddies,baddy)
- --end
+ if baddy.x<-7 then
+  del(baddies,baddy)
+ end
 end
 
 function _update()
 -- fr=(fr+1)%128
  levelsidx+=1
  updatelevel()
+ foreach(stars,updatestar)
   
  if flatcounter==0 then
   if rnd(100)<chanceflat then
@@ -140,8 +160,13 @@ function drawspr(s)
  spr(1,s.x,s.y)
 end
 
+function drawstar(s)
+ pset(s.x,s.y,5)
+end
+
 function _draw()
  cls()
+ foreach(stars,drawstar)
 -- spr(1,1,80)
  print("d:"..leveldelta,0,0)
  print("distfromcentre:"..distfromcentre,0,7)
