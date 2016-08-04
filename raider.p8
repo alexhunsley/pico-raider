@@ -1,12 +1,11 @@
 pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
-baddies={}
 stars={}
-bullets={}
 numstars=10
 
-fadecols={7,10,15,6,12,8,9,11,14,4,13,3,5,2,1}
+fadecols={7,10,15,6,12,8,
+   9,11,14,4,13,3,5,2,1}
 
 maxblasters=2
 blasters={}
@@ -23,23 +22,14 @@ playerminx=4
 playermaxy=100
 playerminy=4
 
-level=120
-flatmode=1
-deltacounter=0
-deltacountermax=10
+--flatdeltas={1,0,-1,0}
+flatdeltas={0,0,0,0}
 
-flatdeltas={1,0,-1,0}
-
-flatcounter=0
 chanceflat=2
 flatwidth=12
 
-leveldelta=-1
-
 maxslope=4
 
-ldch=0
-distfromcentre=0
 -- dists are from bottom
 -- of screen
 highestland=115
@@ -47,22 +37,22 @@ lowestland=30
 midland=(highestland+lowestland)/2
 landhalf=(highestland-lowestland)/2
 
--- probabilities of land delta
--- change (note: can change to
--- something with same sign!)
-
-probgodown={}
-
 levels={}
--- index of the leftmost land
--- height on-screen
-levelsidx=1
+
+function myrnd(x)
+ vl=rnd(x)
+ if count(rndvals)<10 then
+  add(rndvals,x)
+--  add(rndvals,vl)
+ end
+ return vl
+end
 
 function createstars()
  for i=1,numstars do
   star={}
-  star.x=rnd(128)
-  star.y=rnd(80)
+  star.x=myrnd(128)
+  star.y=myrnd(80)
   star.dx=0.5
   add(stars,star)
  end
@@ -75,20 +65,32 @@ function updatestar(star)
  end
 end
 
-function initplayer()
- player={}
+function resetlevel()
+ srand(3141)
+ --createstars()
+ 
+ rndvals={}
+ bullets={}
+ rando=-1
+ baddies={}
+ blasters={}
+ levelidx=0
  player.x=playerminx
  player.y=playerminy+30
- player.xspeed=2
- player.yspeed=1
- player.spr=16
  player.explodingidx=0
-end
 
-function _init()
- srand(314)
- initplayer()
- createstars()
+ distfromcentre=0
+ ldch=0
+ leveldelta=-1
+ level=120
+ flatmode=1
+ deltacounter=0
+ deltacountermax=10
+ flatcounter=0
+
+ -- index of the leftmost land
+ -- height on-screen
+ levelsidx=1
  for i=1,128 do
   if i%4 > 1 then
    levels[i]=120
@@ -96,6 +98,21 @@ function _init()
    levels[i]=119
   end
  end
+end
+
+function initplayer()
+ player={}
+ player.xspeed=2
+ player.yspeed=1
+ player.spr=16
+ player.score=0
+ player.lives=3
+end
+
+function _init()
+ --createstars()
+ initplayer()
+ resetlevel()
 end
 
 function splitsprvert(spritenum,x,y,spacing)
@@ -112,6 +129,8 @@ function newbaddy(x,y)
  baddy.x=x
  baddy.y=y
  baddy.spr=1
+ baddy.fadeidx=0
+ baddy.score=2
  return baddy
 end
 
@@ -139,7 +158,8 @@ function updatelevel()
  
  deltoid=0
  if flatcounter==0 then
-	 deltoid=leveldelta*max(0,rnd(3+maxslope)-maxslope)
+	 deltoid=leveldelta*max(0,
+	   myrnd(3+maxslope)-maxslope)
  else  
   deltoid=flatdeltas[1+flatcounter%4]
  end
@@ -155,15 +175,16 @@ function updatelevel()
  
  if (deltacounter==deltacountermax) then
   deltacounter=0
-  maxslope=rnd(3)+1
+  maxslope=myrnd(3)+1
  end
  
  distfromcentre=abs(oldlevel
   -midland)/landhalf
   
- distfromcentre=15*min(1,distfromcentre)
+ distfromcentre=15*min(1,
+    distfromcentre)
  
- if rnd(100)<distfromcentre then
+ if myrnd(100)<distfromcentre then
   -- turn around
   leveldelta=sgn(midland-oldlevel)
   ldch+=1
@@ -213,6 +234,15 @@ function dofire(buttonid)
 end
 
 function updateplayer()
+--check landscape collision
+ lidx1=1+(player.x+levelsidx)%128
+ lidx2=1+(player.x+7+levelsidx)%128
+  
+ if levels[lidx1]<=player.y+7
+   or levels[lidx2]<=player.y+7 then
+  player.explodingidx=1
+ end
+ 
 	if (btn(1) and 
 	 player.x<playermaxx) then
 	  player.x=player.x+player.xspeed end
@@ -241,7 +271,6 @@ end
 function updatebullet(b)
  b.y+=b.dy
  
- --rar
  rembullet=0
 
  for i=0,1 do 
@@ -249,10 +278,14 @@ function updatebullet(b)
   lidx=1+(b.x+levelsidx)%128
   
   for n in all(baddies) do
-   if b.x>=n.x-1 and b.x<n.x+8
-       and b.y>=n.y-1 and b.y<n.y+8 then
+   if n.fadeidx==0
+       and b.x>=n.x-1
+       and b.x<n.x+8
+       and b.y>=n.y-1
+       and b.y<n.y+8 then
     rembullet=1
-    del(baddies,n)
+    n.fadeidx=1
+    player.score+=n.score
    end
   end
     
@@ -273,10 +306,11 @@ end
 function updatelandscape()
  levelsidx+=1
  updatelevel()
+ --if no flat already happening
  if flatcounter==0 then
-  if rnd(100)<chanceflat then
+  if myrnd(100)<chanceflat then
    flatcounter=flatwidth
-   if rnd(2)<1 then
+   if myrnd(2)<1 then
     if count(baddies)>=0 then
      spawnlandbaddy()
     end
@@ -292,6 +326,10 @@ function updatelandscape()
 end
 
 function _update()
+-- if rando==-1 then
+--  rando=myrnd(1000)
+-- end 
+ 
 -- fr=(fr+1)%128
  if player.explodingidx>0 then
   return
@@ -311,12 +349,28 @@ function _update()
  --print("asd"..distfromcentre)
 end
 
+function drawfadespr(s)
+ if s.fadeidx>0 then
+  allpaletteto(fadecols[s.fadeidx])
+  spr(s.spr,s.x,s.y)
+  pal()
+  s.fadeidx+=2
+  if (s.fadeidx==15) then
+   del(baddies,s)
+  end
+ else
+  spr(s.spr,s.x,s.y)
+ end
+end
+
 function drawspr(s)
  spr(s.spr,s.x,s.y)
+--   allpaletteto(fadecols[1+player.explodingidx/2])
 end
 
 function drawblaster(s)
  spr(s.spr,s.x,s.y)
+ -- trigger a new blast?
  if s.blastremain==0 then
   if player.x>s.x-16 and
     player.x<s.x+9 then
@@ -324,17 +378,29 @@ function drawblaster(s)
    sfx(0)     
   end
  else
-  s.blastremain-=1
-  if s.blastremain==0 then
-   s.blastremain=-1
+  -- blasting occuring
+  --  this should be in update! todo
+  if s.blastremain>0 then
+   sprn=s.blastspr+s.blastremain%2
+   for y=1,1+s.y/8 do
+    spr(sprn,s.x,s.y-y*8)
+   end
+  end 
+  -- player hit?
+  if player.x+7>=s.x+2
+    and player.x<=s.x+5
+    and s.blastremain>0 
+    and player.explodingidx==0 then
+   player.explodingidx=1
+  end
+
+  if player.explodingidx==0 then
+   s.blastremain-=1
+   if s.blastremain==0 then
+    s.blastremain=-1
+   end
   end
  end
- if s.blastremain>0 then
-  sprn=s.blastspr+s.blastremain%2
-  for y=1,1+s.y/8 do
-   spr(sprn,s.x,s.y-y*8)
-  end
- end 
 end
 
 
@@ -350,11 +416,13 @@ function prdebug()
  print("levelsidx:"..levelsidx,0,28)
  print("baddies:"..count(baddies),0,35)
  print("splat:"..splat,0,42)
+ print("rando:"..rndvals[1].." "..rndvals[2],0,49)
 end
 
-function newlife()
+function playerdied()
 -- lose a life and reset play
-
+ player.lives-=1
+ resetlevel()
 end
 
 function allpaletteto(c)
@@ -372,8 +440,7 @@ function drawship()
   pal()
   player.explodingidx+=1
   if player.explodingidx==32 then
-   player.explodingidx=0
-   newlife()
+   playerdied()
   end
  else
   spr(player.spr,
@@ -389,7 +456,7 @@ function _draw()
  cls()
  foreach(stars,drawstar)
 -- spr(1,1,80)
- --prdebug()
+ prdebug()
  lidx=1+levelsidx%128
  line(0,128,
       0,levels[lidx],
@@ -406,7 +473,7 @@ function _draw()
        x,levels[lidx],7)
  end
  
- foreach(baddies,drawspr)
+ foreach(baddies,drawfadespr)
  foreach(blasters,drawblaster)
  foreach(bullets,drawbullet)
  drawship()
