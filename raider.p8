@@ -239,9 +239,33 @@ function updateplayer()
 end
 
 function updatebullet(b)
- b.x+=b.dx
  b.y+=b.dy
+ 
+ --rar
+ rembullet=0
+
+ for i=0,1 do 
+  b.x+=b.dx/2
+  lidx=1+(b.x+levelsidx)%128
+  
+  for n in all(baddies) do
+   if b.x>=n.x-1 and b.x<n.x+8
+       and b.y>=n.y-1 and b.y<n.y+8 then
+    rembullet=1
+    del(baddies,n)
+   end
+  end
+    
+  if b.y>=levels[lidx] then
+   rembullet=1
+   break
+  end
+ end
+       
  if b.x>=128 then
+  rembullet=1
+ end
+ if rembullet==1 then
   del(bullets,b)
  end
 end
