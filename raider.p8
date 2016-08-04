@@ -140,6 +140,8 @@ function newblaster(x,y)
  blaster.x=x
  blaster.y=y
  blaster.spr=2
+ blaster.fadeidx=0
+ blaster.score=4
  blaster.blastspr=3
  blaster.blastremain=0
  return blaster
@@ -206,6 +208,12 @@ end
 
 function updatebaddy(baddy)
  baddy.x-=landscapespeed
+ if baddy.x<player.x+8
+   and baddy.x+8>player.x
+   and baddy.y<player.y+8
+   and baddy.y+8>player.y then
+  player.explodingidx=1
+ end
  if baddy.x<-7 then
   del(baddies,baddy)
  end
@@ -213,6 +221,13 @@ end
 
 function updateblaster(bl)
  bl.x-=landscapespeed
+ if bl.x<player.x+8
+   and bl.x+8>player.x
+   and bl.y<player.y+8
+   and bl.y+8>player.y then
+  player.explodingidx=1
+ end
+
  if bl.x<-7 then
   del(blasters,bl)
  end
@@ -276,6 +291,18 @@ function updatebullet(b)
   lidx=1+(b.x+levelsidx)%128
   
   for n in all(baddies) do
+   if n.fadeidx==0
+       and b.x>=n.x-1
+       and b.x<n.x+8
+       and b.y>=n.y-1
+       and b.y<n.y+8 then
+    rembullet=1
+    n.fadeidx=1
+    player.score+=n.score
+   end
+  end
+  -- repetition
+  for n in all(blasters) do
    if n.fadeidx==0
        and b.x>=n.x-1
        and b.x<n.x+8
