@@ -41,14 +41,15 @@ levels={}
 
 function myrnd(x)
  vl=rnd(x)
- if count(rndvals)<10 then
-  add(rndvals,x)
---  add(rndvals,vl)
- end
+-- if count(rndvals)<10 then
+--  add(rndvals,x)
+----  add(rndvals,vl)
+-- end
  return vl
 end
 
 function createstars()
+ stars={}
  for i=1,numstars do
   star={}
   star.x=myrnd(128)
@@ -67,7 +68,7 @@ end
 
 function resetlevel()
  srand(3141)
- --createstars()
+ createstars()
  
  rndvals={}
  bullets={}
@@ -263,9 +264,6 @@ function updateplayer()
  else
   bulletfiredown=0
  end
- if btn(5) and player.explodingidx==0 then
-  player.explodingidx=1
- end
 end
 
 function updatebullet(b)
@@ -456,7 +454,7 @@ function _draw()
  cls()
  foreach(stars,drawstar)
 -- spr(1,1,80)
- prdebug()
+ --prdebug()
  lidx=1+levelsidx%128
  line(0,128,
       0,levels[lidx],
