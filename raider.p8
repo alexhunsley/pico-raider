@@ -1,6 +1,11 @@
 pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
+gs_intro=0
+gs_playing=1
+gamestate=gs_intro
+update_draw_counter=0
+
 stars={}
 numstars=10
 
@@ -351,6 +356,7 @@ function updatelandscape()
 end
 
 function _update()
+ update_draw_counter+=1
 -- if rando==-1 then
 --  rando=myrnd(1000)
 -- end 
@@ -444,6 +450,11 @@ function prdebug()
  print("rando:"..rndvals[1].." "..rndvals[2],0,49)
 end
 
+function prdebug2()
+ print("dropped:"..update_draw_counter,0,0)
+ print("cpu:"..stat(1),0,8)
+end
+
 function playerdied()
 -- lose a life and reset play
  player.lives-=1
@@ -478,10 +489,12 @@ function drawbullet(b)
 end
 
 function _draw()
+ update_draw_counter-=1
  cls()
  foreach(stars,drawstar)
 -- spr(1,1,80)
  --prdebug()
+ prdebug2()
  lidx=1+levelsidx%128
  line(0,128,
       0,levels[lidx],
