@@ -1,9 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
-gs_intro=0
-gs_playing=1
-gamestate=gs_intro
+gs_intro=1
+gs_game=2
 update_draw_counter=0
 
 stars={}
@@ -43,6 +42,15 @@ midland=(highestland+lowestland)/2
 landhalf=(highestland-lowestland)/2
 
 levels={}
+
+function _init()
+ --createstars()
+ 
+-- draw_func=draw_game
+-- update_func=update_game
+
+ enter_state(gs_intro)
+end
 
 function myrnd(x)
  vl=rnd(x)
@@ -112,13 +120,11 @@ function initplayer()
  player.yspeed=1
  player.spr=16
  player.score=0
- player.lives=3
-end
-
-function _init()
- --createstars()
- initplayer()
- resetlevel()
+ player.lives=1
+ --prevent initial bullet fire
+ --from hitting btn4 on intro
+ --screen
+ player.bulletfiredown=1
 end
 
 function splitsprvert(spritenum,x,y,spacing)
@@ -277,12 +283,12 @@ function updateplayer()
 	 player.y>playerminy) then 
 	  player.y=player.y-player.yspeed end
  if (btn(4)) then 
-  if bulletfiredown==0 then
+  if player.bulletfiredown==0 then
    dofire(4)
-   bulletfiredown=1
+   player.bulletfiredown=1
   end
  else
-  bulletfiredown=0
+  player.bulletfiredown=0
  end
 end
 
@@ -353,31 +359,6 @@ function updatelandscape()
  else
   flatcounter-=1
  end
-end
-
-function _update()
- update_draw_counter+=1
--- if rando==-1 then
---  rando=myrnd(1000)
--- end 
- 
--- fr=(fr+1)%128
- if player.explodingidx>0 then
-  return
- end
- 
- for i=1,landscapespeed do
-  updatelandscape()
- end
-
- updateplayer()
- 
- foreach(bullets,updatebullet)
- foreach(stars,updatestar)
-   
- foreach(baddies,updatebaddy)
- foreach(blasters,updateblaster)
- --print("asd"..distfromcentre)
 end
 
 function drawfadespr(s)
@@ -458,6 +439,10 @@ end
 function playerdied()
 -- lose a life and reset play
  player.lives-=1
+ if player.lives==0 then
+  enter_state(gs_intro)
+  return
+ end
  resetlevel()
 end
 
@@ -488,13 +473,58 @@ function drawbullet(b)
  rect(b.x,b.y,b.x+1,b.y+1,7)
 end
 
+-------------------------------
+-------------------------------
+
+function _update()
+ update_draw_counter+=1
+ update_func()
+end
+
 function _draw()
  update_draw_counter-=1
+ draw_func()
+end
+
+-------------------------------
+-------------------------------
+-- intro funcs
+
+function update_intro()
+ if btnp(4) then
+  enter_state(gs_game)
+ end
+end
+
+function draw_intro()
  cls()
- foreach(stars,drawstar)
--- spr(1,1,80)
- --prdebug()
- prdebug2()
+ print("intro screen for amazing game",5,5)
+end
+
+-------------------------------
+-------------------------------
+-- main game funcs
+
+function update_game()
+ 
+ if player.explodingidx>0 then
+  return
+ end
+ 
+ for i=1,landscapespeed do
+  updatelandscape()
+ end
+
+ updateplayer()
+ 
+ foreach(bullets,updatebullet)
+ foreach(stars,updatestar)
+   
+ foreach(baddies,updatebaddy)
+ foreach(blasters,updateblaster)
+end
+
+function draw_landscape()
  lidx=1+levelsidx%128
  line(0,128,
       0,levels[lidx],
@@ -510,11 +540,50 @@ function _draw()
   line(x,levels[lidxold],
        x,levels[lidx],7)
  end
- 
+end
+
+function draw_game()
+ cls()
+ foreach(stars,drawstar)
+
+ prdebug2()
+
+ draw_landscape() 
  foreach(baddies,drawfadespr)
  foreach(blasters,drawblaster)
  foreach(bullets,drawbullet)
  drawship()
+end
+
+-------------------------------
+-------------------------------
+--state etc
+
+function setup_state_intro()
+--todo
+ --print("setup state intro")
+ update_func=update_intro
+ draw_func=draw_intro
+ --print("ssi done!")
+end
+
+function setup_state_game()
+ --print("setup state game")
+ update_func=update_game
+ draw_func=draw_game
+ initplayer()
+ resetlevel()
+end
+
+setup_state_funcs=
+ {setup_state_intro,
+  setup_state_game}
+
+function enter_state(s)
+ --print("entering state "..s)
+ game_state=s
+ init_func=setup_state_funcs[s]
+ init_func()
 end
 
 __gfx__
