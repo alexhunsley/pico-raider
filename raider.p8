@@ -5,6 +5,8 @@ gs_intro=1
 gs_game=2
 update_draw_counter=0
 
+actors={}
+
 stars={}
 numstars=10
 
@@ -26,6 +28,7 @@ playerminx=4
 playermaxy=100
 playerminy=4
 
+
 --flatdeltas={1,0,-1,0}
 flatdeltas={0,0,0,0}
 
@@ -41,6 +44,7 @@ lowestland=30
 midland=(highestland+lowestland)/2
 landhalf=(highestland-lowestland)/2
 
+-- landscape height
 levels={}
 
 function _init()
@@ -80,7 +84,7 @@ function updatestar(star)
 end
 
 function resetlevel()
- srand(3141)
+ srand(31)
  createstars()
  
  rndvals={}

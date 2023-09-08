@@ -56,7 +56,7 @@ Map chunk format:
 1 byte giving the screen number. 
 1 or more:
   EITHER: // map chunk
-    1 byte X/Y address, X low, Y hi (can't have X=15)
+    1 byte X/Y address, X low, Y hi (can't have Y=15)
     1 byte W/H minus 1 (0 is width=1)
     1 bytes sprite number
   OR:     // control code
